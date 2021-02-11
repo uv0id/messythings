@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "axios": "^0.20.0",
+    "fs-extra": "^9.0.1",
+    "image-downloader": "^4.0.1"
+  },
+  "name": "mdex-downloader-with-api",
+  "version": "0.0.1",
+  "description": "Downloads chapter and full mangas from https://mangadex.org (Politely)",
+  "main": "index.js",
+  "author": "uv0id <apanzo101@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": "14.13.x"
+  }
+}
