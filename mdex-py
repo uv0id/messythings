@@ -1,0 +1,82 @@
+#! /usr/bin/python3.8
+
+"""
+mdex-py - Downloads a manga chapter at mangadex.org using data saver mode
+mdex-py <chapter_id> - Single download mode
+mdex-py <file_path> - Batch download from file
+"""
+import shutil, os, sys, requests
+
+ROOT_URL = "https://mangadex.org/api/v2/chapter/"
+
+def safe_dirname(name: str):
+    """Sanitizes the target directory name
+
+    Args:
+        name (string): the directory name
+    """
+    return name.replace(' ', '_')
+
+def get_fullpath(path, filename):
+    return os.path.join(path, filename)
+
+def save_img(dest_dir, fname, img_url):
+    filename = get_fullpath(dest_dir, fname) 
+    img_obj = requests.get(img_url, stream=True)
+    
+    with open(filename, 'wb') as img_file:
+        shutil.copyfileobj(img_obj.raw, img_file)
+    
+    print('page downloaded')
+
+def get_chapter(chapter_id: str):
+    resp = requests.get(ROOT_URL + chapter_id, params={'saver': True})
+    try:
+        resp.raise_for_status()
+    except requests.HTTPError as request_error:
+        print(f"An error occured getting {chapter_id}\n{request_error}")
+    
+    return resp.json()['data']
+
+def make_savedir(chapter):
+    dest_dir = os.path.join(os.getcwd(), 
+                            safe_dirname(chapter['mangaTitle']),
+                            'volume_'+safe_dirname(chapter['volume'] or 'misc'),
+                            'chapter_'+safe_dirname(chapter['chapter'] or '1'))
+    try:
+        os.makedirs(dest_dir)
+        print(f"Saving to: {dest_dir}")
+        return dest_dir
+    except OSError as err:
+        print(f"Error while creating directory: {err}")
+        return;
+                    
+
+if __name__ == '__main__':
+    """runs the program
+    """
+    if len(sys.argv) > 0:
+        caller_arg = sys.argv[1]
+        
+        # file path
+        if ('/' in caller_arg):
+            with open(caller_arg) as chapter_fie:
+                for line in chapter_fie:
+                    curr_chapter = get_chapter(str(line))
+                    save_dir = make_savedir(curr_chapter)
+                    
+                    pages = curr_chapter['pages']
+                    for img in pages:
+                        img_url = f"{curr_chapter['server']}{curr_chapter['hash']}/{img}"
+                        save_img(save_dir, img, img_url)
+                    print("Done !")
+        else:
+            curr_chapter = get_chapter(caller_arg)
+            save_dir = make_savedir(curr_chapter)
+            pages = curr_chapter['pages']
+            
+            for img in pages:
+                img_url = f"{curr_chapter['server']}{curr_chapter['hash']}/{img}"
+                save_img(save_dir, img, img_url)
+            
+            print("Done !")
